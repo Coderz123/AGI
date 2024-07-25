@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<script src="js/htmx.min.js"></script>
+  	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<title>AGP</title>
+</head>
+<body>
+	<H3>AGI</H3><br/>
+
+	<ul>
+		<li><a href="actions">Actions</a></li>
+		<li><a href="emotions">Emotions</a></li>
+	</ul>
+
+  <!-- have a button POST a click via AJAX -->
+  <button hx-get="/clicked" hx-swap="outerHTML">
+    Click Me
+  </button>
+</body>
+</html>
