@@ -8,7 +8,7 @@
             "neighbours":[2,6],
             "emotions":[
                 {
-                    "emotion":"Extacy",
+                    "emotion":"Ecstasy",
                     "max":100,
                     "min":61
                 },
@@ -101,7 +101,7 @@
             "name":"Anger",
             "description":"",
             "oppositeId": 5,
-            "neighbours":[1,4],
+            "neighbours":[3,6],
             "emotions":[
                 {
                     "emotion":"Rage",

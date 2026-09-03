@@ -1,106 +1,70 @@
-#include "../include/AGI.h"
+#include "Body/Action/verbs.h"
+#include "Soul/Emotion/EmotionData.h"
+
 #include <crow.h>
 
-bool debug = true;
-std::vector<Emotion> emotions;
+#include <exception>
+#include <filesystem>
+#include <iostream>
+#include <string>
+#include <vector>
 
-using namespace rapidjson;
+#ifndef AGI_SOURCE_DIR
+#define AGI_SOURCE_DIR "."
+#endif
 
-int main (int argc, char** argv)
+int main()
 {
-	//setupEmotions();
+    const std::filesystem::path sourceRoot{AGI_SOURCE_DIR};
+    std::vector<Emotion> emotions;
 
-
-	std::ifstream ifs("data/Soul/EmotionData.json");
-	IStreamWrapper isw(ifs);
-
-
-	Document d;
-	d.ParseStream(isw);
-
-	assert(d.IsObject());
-	assert(d.HasMember("Categories"));
-	assert(d["Categories"].IsArray());
-	const Value& a = d["Categories"];
-	assert(a.IsArray());
-
-    //for (SizeType i = 0; i < a.Size(); i++) // Uses SizeType instead of size_t
-        //        printf("a[%d] = %d\n", i, a[i].GetInt());
-    static const char* kTypeNames[] =
-        { "Null", "False", "True", "Object", "Array", "String", "Number" };
-
-    for (Value::ConstMemberIterator itr = d.MemberBegin();
-        itr != d.MemberEnd(); ++itr)
+    try
     {
-        printf("Type of member %s is %s\n",
-            itr->name.GetString(), kTypeNames[itr->value.GetType()]);
+        emotions = loadEmotions(sourceRoot / "data/Soul/EmotionData.json");
+    }
+    catch (const std::exception& error)
+    {
+        std::cerr << "Failed to start AGI: " << error.what() << '\n';
+        return 1;
     }
 
-    for (auto& em : a.GetArray())
-    {
-        assert(em.IsObject());
-        printf("Processing %s...\n", em["name"].GetString());
-        int emId = em["id"].GetInt();
-        std::string emName = em["name"].GetString();
-        std::string emDescr = em["description"].GetString();
-        int emOppId = em["oppositeId"].GetInt();
-        const Value& nbrs = em["neighbours"].GetArray();
-        std::vector<int> emNbrs{nbrs[0].GetInt(), nbrs[1].GetInt()};
-        const Value& emns = em["emotions"].GetArray();
+    std::cout << "Loaded " << emotions.size() << " emotion categories.\n";
 
-        for (auto& emObj : emns.GetArray())
-        {
-            std::string emotionName = emObj["emotion"].GetString();
-            int emmin = emObj["min"].GetInt();
-            int emmax = emObj["max"].GetInt();
-            printf("\t %s [%d:%d]...\n", emotionName.c_str(), emmin, emmax);
-        }
+    crow::SimpleApp app;
+    crow::mustache::set_global_base((sourceRoot / "templates").string());
 
-    }
-
-	crow::SimpleApp app;
-	crow::mustache::set_base(".");
-
-	CROW_ROUTE(app, "/")([](const crow::request&, crow::response& res) {
-        //replace cat.jpg with your file path
-        res.set_static_file_info("templates/index.html");
-        res.end();
+    CROW_ROUTE(app, "/")([sourceRoot](const crow::request&, crow::response& response) {
+        response.set_static_file_info_unsafe((sourceRoot / "templates/index.html").string());
+        response.end();
     });
 
-	CROW_ROUTE(app, "/actions")([&](){
-		crow::mustache::context ctx;
-		ctx["actions"] = actions;
-		return crow::mustache::load("actions.html").render(ctx);
+    CROW_ROUTE(app, "/actions")([] {
+        crow::mustache::context context;
+        context["actions"] = actions;
+        return crow::mustache::load("actions.html").render(context);
+    });
 
-	});
+    CROW_ROUTE(app, "/js/htmx.min.js")(
+        [sourceRoot](const crow::request&, crow::response& response) {
+            response.set_static_file_info_unsafe((sourceRoot / "js/htmx.min.js").string());
+            response.end();
+        });
 
-	CROW_ROUTE(app, "/js/htmx.min.js")([&](const crow::request&, crow::response& res){
-        res.set_static_file_info("js/htmx.min.js");
-        res.end();
-	});
+    CROW_ROUTE(app, "/clicked")([] {
+        return "<p>This is the replaced text!</p>";
+    });
 
-	CROW_ROUTE(app, "/clicked")([&](){
-		return "<p>This is the replaced text!</p>";
-
-	});
-
-	CROW_ROUTE(app, "/emotions")([&](){
-		crow::mustache::context ctx;
-		std::vector<std::string> descr;
-		for (Emotion& em : emotions)
+    CROW_ROUTE(app, "/emotions")([&emotions] {
+        crow::mustache::context context;
+        std::vector<std::string> descriptions;
+        descriptions.reserve(emotions.size());
+        for (const auto& emotion : emotions)
         {
-            descr.push_back(em.toHtml());
+            descriptions.push_back(emotion.toString());
         }
-		ctx["emotions"] = descr;
-		return crow::mustache::load("emotions.html").render(ctx);
+        context["emotions"] = descriptions;
+        return crow::mustache::load("emotions.html").render(context);
+    });
 
-	});
-
-
-	auto _a = app.bindaddr("127.0.0.1")
-	   .port(18080)
-	   .multithreaded()
-	   .run_async();
-	return 0;
-
+    app.bindaddr("127.0.0.1").port(18080).multithreaded().run();
 }

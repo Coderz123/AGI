@@ -1,3 +1,5 @@
+#pragma once
+
 #include "Sensation/sensation.h"
 #include "Sight/sight.h"
 #include "Smell/smell.h"

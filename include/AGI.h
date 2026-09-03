@@ -1,7 +1,4 @@
-#include "iostream"
-#include <vector>
+#pragma once
 
-#include "Body/body.h"
-#include "Soul/soul.h"
-#include "Spirit/spirit.h"
-#include "Util/db/db.h"
+#include "Body/Action/verbs.h"
+#include "Soul/Emotion/EmotionData.h"

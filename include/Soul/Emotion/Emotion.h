@@ -1,45 +1,46 @@
-//#include <cypher-parser.h>
-#include <errno.h>
-#include <stdio.h>
-#include <fstream>
-#include "rapidjson/document.h"
-#include "rapidjson/istreamwrapper.h"
+#pragma once
+
+#include <algorithm>
+#include <string>
+#include <tuple>
+#include <utility>
+#include <vector>
 
 class Emotion
 {
 public:
-	Emotion(){};
-	Emotion(std::string name):_name(name){};
-	virtual ~Emotion(){};
+    using MemberEmotion = std::tuple<std::string, int, int>;
+
+    Emotion() = default;
+
+    Emotion(int id,
+            int oppositeId,
+            std::string name,
+            std::string description,
+            std::vector<int> neighbours,
+            std::vector<MemberEmotion> memberEmotions)
+        : _id(id),
+          _oppositeId(oppositeId),
+          _name(std::move(name)),
+          _description(std::move(description)),
+          _neighbours(std::move(neighbours)),
+          _memberEmotions(std::move(memberEmotions))
+    {}
 
 	int increase()
 	{
-		_intensity++;
+		_intensity = std::min(_intensity + 1, 100);
 		return _intensity;
 	}
 
 	int decrease()
 	{
-		_intensity--;
+		_intensity = std::max(_intensity - 1, 0);
 		return _intensity;
 	}
 
-	void print()
-	{
-		std::cout << "Emotion   :     " << _name << std::endl;
-	}
-
-	std::string toString()
-	{
-		std::string reslt{};
-		return reslt;
-	}
-
-	std::string toHtml()
-	{
-		std::string reslt{};
-		return reslt;
-	}
+	[[nodiscard]] std::string toString() const;
+	[[nodiscard]] std::string toHtml() const;
 
 	int _id = -1;
 	int _oppositeId = -1;
@@ -47,8 +48,7 @@ public:
     std::string _name;
     std::string _description;
 	std::vector<int> _neighbours;
-	std::vector<std::tuple<std::string, int, int>> _memberEmotions;
+	std::vector<MemberEmotion> _memberEmotions;
 
 
 };
-
